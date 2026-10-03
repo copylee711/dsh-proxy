@@ -39,6 +39,29 @@ Open **Settings → Network proxy**:
 
 **Save** applies to the next request, including **Fetch available models** on the Models page.
 
+### System proxy
+
+The global selector offers Off (use launch settings), System proxy (auto-detect), and Manual proxy. Each provider can also select its own system proxy, overriding the global route. Menus follow dsh-free-search's floating cards, hover highlights, and selection checkmarks, with Arrow, Home/End, Enter, Esc, and Tab keyboard support.
+
+Detection tries valid HTTP(S) values from HTTPS_PROXY / https_proxy, HTTP_PROXY / http_proxy, and ALL_PROXY / all_proxy in that order, then Windows current-user Internet Settings or macOS scutil. Linux uses environment variables. A launch environment snapshot prevents the plugin's own installed proxy from feeding back into detection. OS settings are checked every 30 seconds; the settings page also offers Detect again. SOCKS, PAC, and WPAD are not supported. When detection finds no usable proxy, the global layer restores launch settings and provider overrides fall back to the global route with a warning. Status and logs mask proxy credentials.
+
+```yaml
+global:
+  enabled: true
+  mode: system
+  noProxy: []
+providers:
+  openai:
+    enabled: true
+    mode: system
+```
+
+Existing configurations without mode continue using their manual proxy. The global proxy remains disabled by default.
+
+### Accent colour
+
+The bottom of the page offers an accent colour (terracotta, blue or black) for the primary button and focus rings. The choice is shared with the other copylee plugins: changing it in any one of them recolours all of them.
+
 ### Configuration file
 
 The same settings live in `$DSH_HOME/profiles/<profile>/cordis.patch.yml` (the Web UI profile is `web`):
@@ -93,45 +116,6 @@ npm run build   # regenerates lib/ and client/ (commit them)
 
 Try it in a local dsh: `dsh plugin --profile web add /path/to/dsh-proxy`.
 
-### Publish to npm (maintainers)
-
-```sh
-npm login                 # sign in as copylee; check with npm whoami
-npm ci && npm test        # tests pass; lib/ and client/ are already built
-npm pack --dry-run        # should list only lib/ client/ cordis.patch.yml README LICENSE package.json
-npm publish               # publishConfig is public; with 2FA on, npm asks for an OTP
-```
-
-For later releases, push a version tag and the [publish workflow](.github/workflows/publish.yml) publishes it through npm Trusted Publishing (no token needed):
-
-```sh
-npm version patch         # or minor / major: bumps the version, commits and tags vX.Y.Z
-npm run build             # rebuild; commit lib/ and client/ if they changed
-git push --follow-tags    # the vX.Y.Z tag triggers the publish workflow
-```
-
-The workflow checks that the tag matches `package.json`, runs typecheck, tests and the build check, then publishes. Prerelease versions (`1.2.0-rc.1`) go to the `next` dist-tag. It can also be run by hand from the Actions tab; a version already on npm is skipped.
-
 ## License
 
 MIT
-
-
-### System proxy and menus (0.4.0)
-
-The global selector offers Off (use launch settings), System proxy (auto-detect), and Manual proxy. Each provider can also select its own system proxy, overriding the global route. Menus follow dsh-free-search's floating cards, hover highlights, and selection checkmarks, with Arrow, Home/End, Enter, Esc, and Tab keyboard support.
-
-Detection tries valid HTTP(S) values from HTTPS_PROXY / https_proxy, HTTP_PROXY / http_proxy, and ALL_PROXY / all_proxy in that order, then Windows current-user Internet Settings or macOS scutil. Linux uses environment variables. A launch environment snapshot prevents the plugin's own installed proxy from feeding back into detection. OS settings are checked every 30 seconds; the settings page also offers Detect again. SOCKS, PAC, and WPAD are not supported. When detection finds no usable proxy, the global layer restores launch settings and provider overrides fall back to the global route with a warning. Status and logs mask proxy credentials.
-
-```yaml
-global:
-  enabled: true
-  mode: system
-  noProxy: []
-providers:
-  openai:
-    enabled: true
-    mode: system
-```
-
-Existing configurations without mode continue using their manual proxy. The global proxy remains disabled by default.

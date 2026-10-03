@@ -17,7 +17,8 @@
  * second instance never stacks wrappers or removes one still in use.
  */
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { fetch as undiciFetch, type Dispatcher } from 'undici'
+import type { Dispatcher } from 'undici'
+import { undici } from './undici.ts'
 
 const STATE_KEY = Symbol.for('dsh-proxy.fetch-router.v1')
 
@@ -97,6 +98,7 @@ async function routedFetch(input: Parameters<typeof fetch>[0], init: RequestInit
     url = input as string | URL
     merged = { ...init }
   }
+  const { fetch: undiciFetch } = undici()
   return await undiciFetch(url, { ...merged, dispatcher } as Parameters<typeof undiciFetch>[1]) as unknown as Response
 }
 
