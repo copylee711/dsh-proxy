@@ -28,6 +28,137 @@ window.__ModuleLoader__.load({
 		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
+		//#region src/client/accent.ts
+		/**
+		* The accent colour shared by the copylee DSH plugins (docs/ui-spec.md).
+		*
+		* One choice — terracotta orange by default, blue or black — is kept in the
+		* browser under a key every plugin reads, and painted as two CSS variables on
+		* `<body>`, where the Host keeps its own theme variables. A plugin's styles
+		* only ever write `var(--cl-accent)` / `var(--cl-accent-ink)`, so changing the
+		* colour in any plugin's settings recolours all of them at once.
+		*
+		* This file is identical in every plugin; change it in all of them together.
+		*/
+		const ACCENTS = {
+			orange: {
+				name: "陶土橙",
+				accent: "#D97757",
+				ink: "#FFFFFF"
+			},
+			blue: {
+				name: "蓝色",
+				accent: "#3D63E6",
+				ink: "#FFFFFF"
+			},
+			black: {
+				name: "黑色",
+				accent: "var(--dsw-alias-label-primary, #1F1E1D)",
+				ink: "var(--dsw-alias-bg-base, #FFFFFF)"
+			}
+		};
+		const ACCENT_IDS = Object.keys(ACCENTS);
+		const DEFAULT_ACCENT = "orange";
+		/** Use these in styles; the fallbacks cover the moment before the first paint. */
+		const ACCENT = `var(--cl-accent, ${ACCENTS[DEFAULT_ACCENT].accent})`;
+		const ACCENT_INK = `var(--cl-accent-ink, ${ACCENTS[DEFAULT_ACCENT].ink})`;
+		const KEY = "copylee.dsh.accent";
+		const EVENT = "copylee-dsh-accent";
+		function isAccent(value) {
+			return typeof value === "string" && Object.hasOwn(ACCENTS, value);
+		}
+		/** The choice made in this browser, or null while none has been made. */
+		function storedAccent() {
+			try {
+				const stored = localStorage.getItem(KEY);
+				return isAccent(stored) ? stored : null;
+			} catch {
+				return null;
+			}
+		}
+		function readAccent() {
+			return storedAccent() ?? "orange";
+		}
+		function paint() {
+			const colors = ACCENTS[readAccent()];
+			document.body?.style.setProperty("--cl-accent", colors.accent);
+			document.body?.style.setProperty("--cl-accent-ink", colors.ink);
+		}
+		/** Choose the accent for every plugin. */
+		function writeAccent(accent) {
+			try {
+				localStorage.setItem(KEY, accent);
+			} catch {}
+			paint();
+			window.dispatchEvent(new Event(EVENT));
+		}
+		/** Paint the current accent and keep it current. Returns the undo for plugin disposal. */
+		function installAccent() {
+			if (typeof document === "undefined") return () => {};
+			paint();
+			if (document.body === null) document.addEventListener("DOMContentLoaded", paint, { once: true });
+			window.addEventListener(EVENT, paint);
+			window.addEventListener("storage", paint);
+			return () => {
+				window.removeEventListener(EVENT, paint);
+				window.removeEventListener("storage", paint);
+			};
+		}
+		function useAccent() {
+			const [accent, setAccent] = react.useState(readAccent);
+			react.useEffect(() => {
+				const sync = () => setAccent(readAccent());
+				window.addEventListener(EVENT, sync);
+				window.addEventListener("storage", sync);
+				return () => {
+					window.removeEventListener(EVENT, sync);
+					window.removeEventListener("storage", sync);
+				};
+			}, []);
+			return [accent, writeAccent];
+		}
+		/** A row of round swatches: one of them is always chosen. */
+		function AccentPicker({ label = "强调色", hint = "对 copylee 的全部插件生效", names }) {
+			const [accent, choose] = useAccent();
+			const h = react.createElement;
+			const name = (id) => names?.[id] ?? ACCENTS[id].name;
+			return h("div", { style: {
+				display: "flex",
+				alignItems: "center",
+				gap: 10,
+				fontSize: 13,
+				flexWrap: "wrap"
+			} }, h("span", { style: { fontWeight: 500 } }, label), h("span", {
+				role: "radiogroup",
+				"aria-label": label,
+				style: {
+					display: "inline-flex",
+					gap: 8
+				}
+			}, ...ACCENT_IDS.map((id) => h("button", {
+				key: id,
+				type: "button",
+				role: "radio",
+				"aria-checked": accent === id,
+				"aria-label": name(id),
+				title: name(id),
+				onClick: () => choose(id),
+				style: {
+					width: 18,
+					height: 18,
+					padding: 0,
+					borderRadius: "50%",
+					cursor: "pointer",
+					background: ACCENTS[id].accent,
+					border: "2px solid var(--dsw-alias-bg-base, #fff)",
+					boxShadow: accent === id ? "0 0 0 2px var(--dsw-alias-label-primary, #1F1E1D)" : "0 0 0 1px var(--dsw-alias-border-l2, rgba(127,127,127,.35))"
+				}
+			}))), h("span", { style: {
+				fontSize: 12,
+				color: "var(--dsw-alias-label-tertiary, #888)"
+			} }, `${name(accent)} · ${hint}`));
+		}
+		//#endregion
 		//#region src/client/provider-picker.ts
 		const h$2 = react.createElement;
 		/** Editable provider suggestions, using the same floating menu as proxy modes. */
@@ -170,7 +301,7 @@ window.__ModuleLoader__.load({
 		const selectCss = `
 .dshp-select{box-sizing:border-box;width:100%;height:36px;padding:0 12px;display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--dsw-alias-border-l4,rgba(127,127,127,.3));border-radius:var(--dsw-radius-md,8px);background:var(--dsw-alias-bg-layer-3,transparent);color:inherit;font:inherit;font-size:13px;cursor:pointer}
 .dshp-select:hover{border-color:var(--dsw-alias-border-l3,#888)}
-.dshp-select:focus-visible,.dshp-select[aria-expanded=true]{outline:2px solid var(--dsw-alias-state-business-primary,#2f7cff);outline-offset:2px}
+.dshp-select:focus-visible,.dshp-select[aria-expanded=true]{outline:2px solid var(--cl-accent,#D97757);outline-offset:2px}
 .dshp-select:disabled{opacity:.5;cursor:default}
 .dshp-menu{position:fixed;z-index:1100;box-sizing:border-box;padding:4px;overflow-y:auto;overscroll-behavior:contain;border-radius:var(--dsw-radius-lg,12px);background:var(--dsw-menu-surface-fill,var(--dsw-alias-bg-layer-1,#fff));color:var(--dsw-alias-label-primary,#222);backdrop-filter:var(--dsw-menu-backdrop-filter,none);box-shadow:var(--dsw-elevation-prominent,0 10px 32px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.1))}
 .dshp-option{display:flex;align-items:center;gap:8px;min-height:34px;padding:6px 8px;box-sizing:border-box;border-radius:var(--dsw-radius-md,8px);font-size:13px;line-height:20px;cursor:pointer;user-select:none}
@@ -358,6 +489,11 @@ window.__ModuleLoader__.load({
 			addProvider: "添加提供商 id",
 			addProviderPlaceholder: "例如 anthropic、openai、my-gateway",
 			add: "添加",
+			accent: "强调色",
+			accentHint: "对 copylee 的全部插件生效",
+			accentOrange: "陶土橙",
+			accentBlue: "蓝色",
+			accentBlack: "黑色",
 			save: "保存",
 			discard: "放弃修改",
 			saving: "正在保存…",
@@ -398,6 +534,11 @@ window.__ModuleLoader__.load({
 			addProvider: "Add provider id",
 			addProviderPlaceholder: "e.g. anthropic, openai, my-gateway",
 			add: "Add",
+			accent: "Accent colour",
+			accentHint: "applies to every copylee plugin",
+			accentOrange: "Terracotta",
+			accentBlue: "Blue",
+			accentBlack: "Black",
 			save: "Save",
 			discard: "Discard changes",
 			saving: "Saving…",
@@ -667,9 +808,9 @@ window.__ModuleLoader__.load({
 				padding: "7px 16px",
 				fontSize: 13,
 				borderRadius: "var(--dsw-radius-md, 8px)",
-				border: "1px solid var(--dsw-alias-state-business-primary, #2f7cff)",
-				background: "var(--dsw-alias-state-business-primary, #2f7cff)",
-				color: "var(--dsw-alias-label-primary-inverted, #fff)",
+				border: `1px solid ${ACCENT}`,
+				background: ACCENT,
+				color: ACCENT_INK,
 				cursor: "pointer"
 			},
 			secondary: {
@@ -934,7 +1075,15 @@ window.__ModuleLoader__.load({
 					setDirty(false);
 					setMessage(null);
 				}
-			}, t("discard")), dirty ? h("span", { style: S.hint }, t("unsaved")) : null, message === null ? null : h("span", { style: message.kind === "ok" ? S.ok : S.error }, message.text)));
+			}, t("discard")), dirty ? h("span", { style: S.hint }, t("unsaved")) : null, message === null ? null : h("span", { style: message.kind === "ok" ? S.ok : S.error }, message.text)), h(AccentPicker, {
+				label: t("accent"),
+				hint: t("accentHint"),
+				names: {
+					orange: t("accentOrange"),
+					blue: t("accentBlue"),
+					black: t("accentBlack")
+				}
+			}));
 		}
 		function unwrap(result) {
 			if (result.ok) return result.value;
@@ -1001,6 +1150,7 @@ window.__ModuleLoader__.load({
 			"remote.llm"
 		];
 		function apply(ctx) {
+			ctx.effect(() => installAccent(), "dsh-proxy: accent colour");
 			let t = (key) => zh[key];
 			if (ctx.locale !== void 0) {
 				const locale = ctx.locale;

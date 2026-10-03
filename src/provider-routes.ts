@@ -2,9 +2,11 @@
  * The per-provider route table: provider id → the dispatcher its model
  * requests use. Dispatchers are shared per proxy URL, and a replaced table is
  * closed gracefully (`close()`, not `destroy()`) so a stream already running
- * on it finishes.
+ * on it finishes. A dispatcher is only built when a request first asks for it,
+ * so a table of routes nobody has used yet costs nothing at startup.
  */
-import { Agent, ProxyAgent, type Dispatcher } from 'undici'
+import type { Dispatcher } from 'undici'
+import { undici } from './undici.ts'
 import type { ProviderProxyConfig } from './config.ts'
 import { parseProxyUrl, redactProxyUrl } from './proxy-url.ts'
 
@@ -31,14 +33,18 @@ export interface RouteIssue {
  */
 export function createRouteTable(providers: Readonly<Record<string, ProviderProxyConfig>>): { table: RouteTable; issues: RouteIssue[] } {
   const routes = new Map<string, ProviderRoute>()
-  const owned = new Map<string, Dispatcher>()
+  const owned = new Map<string, { create: () => Dispatcher; made?: Dispatcher }>()
+  const route = (key: string, create: () => Dispatcher, label: string): ProviderRoute => {
+    let cell = owned.get(key)
+    if (cell === undefined) owned.set(key, cell = { create })
+    const shared = cell
+    return { get dispatcher() { return shared.made ??= shared.create() }, label }
+  }
   const issues: RouteIssue[] = []
   for (const [provider, entry] of Object.entries(providers)) {
     if (!entry.enabled) continue
     if (entry.mode === 'direct') {
-      let direct = owned.get('direct')
-      if (direct === undefined) owned.set('direct', direct = new Agent())
-      routes.set(provider, { dispatcher: direct, label: '直连' })
+      routes.set(provider, route('direct', () => new (undici().Agent)(), '直连'))
       continue
     }
     let url: URL
@@ -49,15 +55,13 @@ export function createRouteTable(providers: Readonly<Record<string, ProviderProx
       continue
     }
     const key = url.href
-    let dispatcher = owned.get(key)
-    if (dispatcher === undefined) owned.set(key, dispatcher = new ProxyAgent({ uri: key.replace(/\/$/, '') }))
-    routes.set(provider, { dispatcher, label: redactProxyUrl(url) })
+    routes.set(provider, route(key, () => new (undici().ProxyAgent)({ uri: key.replace(/\/$/, '') }), redactProxyUrl(url)))
   }
   return {
     table: {
       routes,
       async close() {
-        await Promise.allSettled([...owned.values()].map(dispatcher => dispatcher.close()))
+        await Promise.allSettled([...owned.values()].map(cell => cell.made?.close()))
       },
     },
     issues,

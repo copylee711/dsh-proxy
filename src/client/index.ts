@@ -9,6 +9,7 @@
  * the only import taken from the host's module table.
  */
 import * as React from 'react'
+import { ACCENT, ACCENT_INK, AccentPicker, installAccent } from './accent.ts'
 import { ProviderPicker } from './provider-picker.ts'
 import { Select, selectCss } from './select.ts'
 import { en, zh, type LocaleKey } from './locales.ts'
@@ -76,7 +77,7 @@ const S: Record<string, React.CSSProperties> = {
   ok: { fontSize: 12, color: 'var(--dsw-alias-state-success-primary, #2a2)' },
   toggle: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, cursor: 'pointer' },
   actions: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
-  primary: { padding: '7px 16px', fontSize: 13, borderRadius: 'var(--dsw-radius-md, 8px)', border: '1px solid var(--dsw-alias-state-business-primary, #2f7cff)', background: 'var(--dsw-alias-state-business-primary, #2f7cff)', color: 'var(--dsw-alias-label-primary-inverted, #fff)', cursor: 'pointer' },
+  primary: { padding: '7px 16px', fontSize: 13, borderRadius: 'var(--dsw-radius-md, 8px)', border: `1px solid ${ACCENT}`, background: ACCENT, color: ACCENT_INK, cursor: 'pointer' },
   secondary: { padding: '7px 14px', fontSize: 13, borderRadius: 'var(--dsw-radius-md, 8px)', border: '1px solid var(--dsw-alias-border-l2, rgba(127,127,127,.3))', background: 'transparent', color: 'inherit', cursor: 'pointer' },
   addRow: { display: 'flex', gap: 8 },
 }
@@ -265,6 +266,8 @@ function ProxySection({ api }: { api: Api }) {
       dirty ? h('span', { style: S.hint }, t('unsaved')) : null,
       message === null ? null : h('span', { style: message.kind === 'ok' ? S.ok : S.error }, message.text),
     ),
+
+    h(AccentPicker, { label: t('accent'), hint: t('accentHint'), names: { orange: t('accentOrange'), blue: t('accentBlue'), black: t('accentBlack') } }),
   )
 }
 
@@ -309,6 +312,7 @@ function createApi(ctx: ClientContext, t: T): Api {
 export const inject = ['slots', 'locale', 'remote', 'remote.settings', 'remote.llm']
 
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => installAccent(), 'dsh-proxy: accent colour')
   let t: T = key => zh[key]
   if (ctx.locale !== undefined) {
     const locale = ctx.locale
