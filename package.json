@@ -1,6 +1,6 @@
 {
   "name": "@copylee/dsh-proxy",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "DeepSeek Harness 代理插件：在设置中配置全局 HTTP(S) 代理，或为单个 LLM 提供商单独配置代理 / 直连",
   "keywords": [
     "dsh",

@@ -13,6 +13,7 @@ import { ACCENT, ACCENT_INK, AccentPicker, installAccent } from './accent.ts'
 import { ProviderPicker } from './provider-picker.ts'
 import { Select, selectCss } from './select.ts'
 import { en, zh, type LocaleKey } from './locales.ts'
+import { registerNavIcon } from './nav-icon.ts'
 import {
   draftFrom, isProviderId, providerRows, settingsFrom, validate,
   type Draft, type ProviderChoice, type ProviderRow,
@@ -323,6 +324,7 @@ export function apply(ctx: ClientContext): void {
     t = key => en[key]
   }
   const api = createApi(ctx, t)
+  ctx.effect(() => registerNavIcon(zh.nav, en.nav), 'dsh-proxy: settings nav icon')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'dsh-proxy',
