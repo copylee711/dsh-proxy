@@ -268,7 +268,7 @@ function ProxySection({ api }: { api: Api }) {
       message === null ? null : h('span', { style: message.kind === 'ok' ? S.ok : S.error }, message.text),
     ),
 
-    h(AccentPicker, { label: t('accent'), hint: t('accentHint'), names: { orange: t('accentOrange'), blue: t('accentBlue'), black: t('accentBlack') } }),
+    h(AccentPicker, { label: t('accent'), names: { orange: t('accentOrange'), blue: t('accentBlue'), black: t('accentBlack') } }),
   )
 }
 

@@ -118,7 +118,7 @@ window.__ModuleLoader__.load({
 			return [accent, writeAccent];
 		}
 		/** A row of round swatches: one of them is always chosen. */
-		function AccentPicker({ label = "强调色", hint = "对 copylee 的全部插件生效", names }) {
+		function AccentPicker({ label = "强调色", hint = "", names }) {
 			const [accent, choose] = useAccent();
 			const h = react.createElement;
 			const name = (id) => names?.[id] ?? ACCENTS[id].name;
@@ -156,7 +156,7 @@ window.__ModuleLoader__.load({
 			}))), h("span", { style: {
 				fontSize: 12,
 				color: "var(--dsw-alias-label-tertiary, #888)"
-			} }, `${name(accent)} · ${hint}`));
+			} }, hint ? `${name(accent)} · ${hint}` : name(accent)));
 		}
 		//#endregion
 		//#region src/client/provider-picker.ts
@@ -490,7 +490,6 @@ window.__ModuleLoader__.load({
 			addProviderPlaceholder: "例如 anthropic、openai、my-gateway",
 			add: "添加",
 			accent: "强调色",
-			accentHint: "对 copylee 的全部插件生效",
 			accentOrange: "陶土橙",
 			accentBlue: "蓝色",
 			accentBlack: "黑色",
@@ -535,7 +534,6 @@ window.__ModuleLoader__.load({
 			addProviderPlaceholder: "e.g. anthropic, openai, my-gateway",
 			add: "Add",
 			accent: "Accent colour",
-			accentHint: "applies to every copylee plugin",
 			accentOrange: "Terracotta",
 			accentBlue: "Blue",
 			accentBlack: "Black",
@@ -1137,7 +1135,6 @@ window.__ModuleLoader__.load({
 				}
 			}, t("discard")), dirty ? h("span", { style: S.hint }, t("unsaved")) : null, message === null ? null : h("span", { style: message.kind === "ok" ? S.ok : S.error }, message.text)), h(AccentPicker, {
 				label: t("accent"),
-				hint: t("accentHint"),
 				names: {
 					orange: t("accentOrange"),
 					blue: t("accentBlue"),
