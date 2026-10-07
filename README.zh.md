@@ -1,5 +1,7 @@
 # @copylee/dsh-proxy
 
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+
 [English](README.md) | 中文
 
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）的网络代理插件：
